@@ -4,6 +4,13 @@ import Gallery from 'react-native-image-gallery';
 import Mapbox from '@mapbox/react-native-mapbox-gl';
 import Video from 'react-native-video';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import { Col, Row, Grid } from "react-native-easy-grid";
+import { Slider } from 'react-native-elements';
+
+import { connect } from 'react-redux';
+import { getAttraction } from "../actions";
+
+
 
 import { Fonts } from '../utils/Fonts';
 
@@ -15,7 +22,7 @@ class AttractionScreen extends Component {
 
 
   static navigationOptions = ({ navigation }) => ({
-    title: navigation.state.params.attraction.title,
+    title: navigation.state.params.attraction.field.title,
     headerStyle: {
       backgroundColor: '#158ACC',
       height: 40,
@@ -31,35 +38,61 @@ class AttractionScreen extends Component {
     this.state = {
       galleryOpen: false,
       paused: false,
+      duration: 0,
+      currentTime: 0,
+      value: 5
     }
+  }
+
+  componentDidMount() {
+    const { id } = this.props.navigation.state.params.attraction;
+    this.props.getAttraction(id);
+  }
+
+
+
+  renderAnnotations() {
+    return (
+      <Mapbox.PointAnnotation
+        key='pointAnnotation'
+        id='pointAnnotation'
+        coordinate={[5.0761, 52.4498]}>
+
+        <View style={styles.annotationContainer}>
+          <View style={styles.annotationFill} />
+        </View>
+        <Mapbox.Callout title='Look! An annotation!' />
+      </Mapbox.PointAnnotation>
+    )
   }
 
 
 
   render() {
-    const { galleryOpen, paused } = this.state;
-    const { title } = this.props.navigation.state.params.attraction;
-    console.log(paused);
+    const { galleryOpen, paused, duration, currentTime, value } = this.state;
+    const { attraction, isLoading } = this.props;
+
+    console.log('LOADING --- ', isLoading);
+
+    if (attraction) {
+      console.log(this.props.attraction.fields);
+    }
+    const { title, description, gallery, audio } = this.props.navigation.state.params.attraction.field;
+
 
     const PlayButton = () => (
       <TouchableHighlight onPress={() => this.setState({ paused: !paused })}>
-        <Image
-          source={require('../assets/images/play.png')}
-          style={styles.playButton}
-          onPress={() => this.setState({ paused: !paused })}
-        />
+        <Icon name="play_arrow" size={50} />
       </TouchableHighlight>
     )
 
 
     const PauseButton = () => (
       <TouchableHighlight onPress={() => this.setState({ paused: !paused })}>
-        <Image
-          source={require('../assets/images/pause.png')}
-          style={styles.playButton}
-        />
+        <Icon name="pause" size={50} />
       </TouchableHighlight>
     )
+
 
     return (
       <ScrollView
@@ -69,83 +102,127 @@ class AttractionScreen extends Component {
             <Icon style={styles.closeIcon} onPress={() => this.setState({ galleryOpen: false })} name="close" size={30} color="white" />
             <Gallery
               style={styles.gallery}
-              images={[
-                { source: { uri: 'http://i.imgur.com/XP2BE7q.jpg' } },
-                { source: { uri: 'http://i.imgur.com/5nltiUd.jpg' } },
-                { source: { uri: 'http://i.imgur.com/6vOahbP.jpg' } },
-                { source: { uri: 'http://i.imgur.com/kj5VXtG.jpg' } }
-              ]}
-            />
-          </View>
-        ) : (null)}
-        <Mapbox.MapView
-          styleURL={Mapbox.StyleURL.Street}
-          zoomLevel={15}
-          centerCoordinate={[11.256, 43.770]}
-          style={styles.mapContainer}>
-        </Mapbox.MapView>
-        <View style={styles.container}>
-
-          <Text style={styles.title}>{title}</Text>
-          <View style={styles.galleryWrapper}>
-            <Image
-              style={styles.bigImage}
-              source={{ uri: this.props.navigation.state.params.attraction.image }}
-              onPress={() => this.setState({ galleryOpen: true })}
-            />
-            <View style={styles.smallImagesWrapper}>
-              <Image
-                style={styles.smallImage}
-                source={{ uri: this.props.navigation.state.params.attraction.image }}
-              />
-              <Image
-                style={styles.smallImage}
-                source={{ uri: this.props.navigation.state.params.attraction.image }}
-              />
-              <Image
-                style={styles.smallImage}
-                source={{ uri: this.props.navigation.state.params.attraction.image }}
-              />
-              <Button title="open Gallery" onPress={() => this.setState({ galleryOpen: true })}></Button>
-            </View>
-          </View>
-          <View style={styles.AudioWrapper}>
-            <Text style={styles.audioTitle}>Listen</Text>
-            <View style={styles.PlayWrapper}>
-              {paused ? (
-                <PlayButton />
-              ) : (
-                  <PauseButton />
-                )
+              images={
+                gallery.map((image) => {
+                  return (
+                    { source: { uri: `https:${image.fields.file.url}` } }
+                  )
+                })
               }
-              <View style={styles.progressBar}
-              ></View>
-            </View>
+            />
           </View>
-          <Video source={{ uri: "http://www.largesound.com/ashborytour/sound/brobob.mp3" }}   // Can be a URL or a local file.
-            ref={(ref) => {
-              this.player = ref
-            }}
-            paused={paused}
-            controls={true}                                 // Store reference
-            onBuffer={this.onBuffer}
-            onLoad={() => {
-              this.setState({
-                paused: false
-              });
-            }}           // Callback when remote video is buffering
-            onError={this.videoError}               // Callback when video cannot be loaded
-            style={styles.backgroundVideo} />
-          <View>
-            <Text style={styles.description} >Aenean tellus metus, bibendum sed, posuere ac, mattis non, nunc. Nam commodo suscipit quam. Curabitur turpis. Maecenas tempus, tellus eget condimentum rhoncus, sem quam semper libero, sit amet adipiscing sem neque sed ipsum. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos hymenaeos.</Text>
-          </View>
-        </View>
+        ) : (
+            <Fragment>
+              <Mapbox.MapView
+                styleURL={'mapbox://styles/zennobruinsma/cjqqrnaau8eey2snpdmjgxhx9'}
+                zoomLevel={15}
+                centerCoordinate={[this.props.navigation.state.params.attraction.field.location.lon, this.props.navigation.state.params.attraction.field.location.lat]}
+                style={styles.mapContainer}
+                zoomLevel={13}
+                showUserLocation={true}>
+                {this.renderAnnotations()}
+              </Mapbox.MapView>
+              <View style={styles.container}>
+
+                {attraction ? (
+                  <Text style={styles.title}>{this.props.attraction.fields.title}</Text>
+                ) : (null)}
+
+                <View style={styles.galleryWrapper}>
+                  {gallery.slice(0, 1).map((image, i) => {
+                    return (
+                      <Image
+                        key={i}
+                        style={styles.bigImage}
+                        source={{ uri: `https:${image.fields.file.url}` }}
+                        onPress={() => this.setState({ galleryOpen: true })}
+                      />
+                    )
+                  })}
+
+                  <View style={styles.smallImagesWrapper}>
+                    {gallery.slice(1).map((image, i) => {
+                      return (
+                        <Image
+                          key={i}
+                          style={styles.smallImage}
+                          source={{ uri: `https:${image.fields.file.url}` }}
+                        />
+                      )
+                    })}
+
+                    <Button title="open Gallery" onPress={() => this.setState({ galleryOpen: true })}></Button>
+                  </View>
+                </View>
+                <View style={styles.AudioWrapper}>
+                  <Text style={styles.audioTitle}>Listen</Text>
+                  <View style={styles.PlayWrapper}>
+                    <Grid>
+                      <Col size={20}>
+                        {paused ? (
+                          <PlayButton />
+                        ) : (
+                            <PauseButton />
+                          )
+                        }
+                      </Col>
+                      <Col size={80}>
+                        {currentTime ? (<Slider
+                          thumbTintColor='#158ACC'
+                          value={currentTime}
+                          onValueChange={value => this.player.seek(value)}
+                          maximumValue={duration}
+                        />) : <Text>0</Text>}
+                      </Col>
+                    </Grid>
+                  </View>
+                </View>
+                <Video source={{ uri: `https:${audio.fields.file.url}` }}
+                  audioOnly={true}
+                  ref={(ref) => {
+                    this.player = ref
+                  }}
+                  paused={paused}
+                  onProgress={() => this.onProgress}
+                  onProgress={(sound) => {
+                    this.setState({
+                      currentTime: sound.currentTime
+                    })
+                  }}
+                  controls={true}                                 // Store reference
+                  onBuffer={this.onBuffer}
+                  onLoad={(audio) => {
+                    this.setState({
+                      paused: true,
+                      duration: audio.duration,
+                    });
+                  }}           // Callback when remote video is buffering
+                  onError={this.videoError}               // Callback when video cannot be loaded
+                  style={styles.backgroundVideo} />
+                <View>
+                  <Text style={styles.description} >{description}</Text>
+                </View>
+              </View>
+            </Fragment>
+          )
+        }
       </ScrollView>
     )
   }
 }
 
-export default AttractionScreen;
+function mapStateToProps(state) {
+  return {
+    attraction: state.attraction,
+    isLoading: state.isLoading,
+  };
+}
+
+export default connect(
+  mapStateToProps,
+  { getAttraction }
+)(AttractionScreen);
+
 
 const styles = {
 
@@ -214,26 +291,39 @@ const styles = {
     width: 54,
     height: 54,
   },
-  progressBar: {
-    flex: 1,
-    height: 30,
-    backgroundColor: 'black',
-  },
+
   description: {
     fontFamily: Fonts.MontSerratRegular,
     fontSize: 16,
     lineHeight: 20,
   },
-  backgroundVideo: {
-    height: 200,
-  },
   gallery: {
     background: 'black',
     marginTop: -100,
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
   },
   closeIcon: {
     marginTop: 10,
     marginLeft: 10,
     zIndex: 100,
+  },
+  annotationContainer: {
+    width: 30,
+    height: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'white',
+    borderRadius: 15,
+  },
+  annotationFill: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: '#35343D',
+    transform: [{ scale: 0.6 }],
   }
 }

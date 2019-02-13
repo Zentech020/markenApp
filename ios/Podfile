@@ -1,0 +1,31 @@
+# Uncomment the next line to define a global platform for your project
+# platform :ios, '9.0'
+
+target 'marken' do
+  # Uncomment the next line if you're using Swift or would like to use dynamic frameworks
+  use_frameworks!
+  # Pods for marken
+  
+
+
+  pod 'react-native-image-picker', :path => '../node_modules/react-native-image-picker'
+
+  target 'markenTests' do
+    inherit! :search_paths
+    # Pods for testing
+  end
+
+end
+
+target 'marken-tvOS' do
+  # Uncomment the next line if you're using Swift or would like to use dynamic frameworks
+  # use_frameworks!
+
+  # Pods for marken-tvOS
+
+  target 'marken-tvOSTests' do
+    inherit! :search_paths
+    # Pods for testing
+  end
+
+end

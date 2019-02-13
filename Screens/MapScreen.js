@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, NativeModules } from 'react-native';
 import MapboxGL from '@mapbox/react-native-mapbox-gl';
 import StoreLocatorKit from '@mapbox/store-locator-react-native';
 
@@ -7,8 +7,7 @@ import reallyCoolIcon from '../assets/images/pause.png';
 import { places } from '../utils/Places';
 const MAPBOX_ACCESS_TOKEN = 'pk.eyJ1IjoiemVubm9icnVpbnNtYSIsImEiOiJjanFxcms5ajYwNXFxNDhsajlob3Qxd2cxIn0.5WXfFyF1RWuwdC9cpSx0Kg';
 
-
-
+// NativeModules.RNmarkenNavigation.takeMeToWH();
 export const theme = new StoreLocatorKit.Theme({
   icon: reallyCoolIcon,
   activeIcon: reallyCoolIcon,
@@ -54,14 +53,7 @@ class MapScreen extends Component {
 
     return (
       <View style={styles.container}>
-        <StoreLocatorKit.MapView
-          simulateUserLocation
-          accessToken={'pk.eyJ1IjoiemVubm9icnVpbnNtYSIsImEiOiJjanFxcms5ajYwNXFxNDhsajlob3Qxd2cxIn0.5WXfFyF1RWuwdC9cpSx0Kg'}
-          theme={theme}
-          centerCoordinate={this.state.initialLocation}
-          featureCollection={places}
-          zoomLevel={13}
-          style={styles.matchParent} />
+        <Text>Map</Text>
       </View>
     )
   }
@@ -74,6 +66,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    // backgroundColor: 'white',
+    backgroundColor: 'white',
   }
 })

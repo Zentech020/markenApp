@@ -1,11 +1,16 @@
 import React, { Component } from 'react';
 import { View, Text, Image, TouchableHighlight, Fragment, Dimensions, TouchableOpacity } from 'react-native';
 import { Col, Row, Grid } from "react-native-easy-grid";
+import { connect } from "react-redux";
+import { setActiveLanguage } from '../actions';
 import Share from 'react-native-share';
+const ImagePicker = require("react-native-image-picker");
+
 
 import { Fonts } from '../utils/Fonts';
 
 import Avatar from '../assets/images/avatar.png';
+import addImage from '../assets/images/addImage.png';
 import ShareTwitter from '../assets/images/share_twitter.png';
 import ShareInstagram from '../assets/images/share_instagram.png';
 import ShareFacebook from '../assets/images/share_facebook.png';
@@ -15,6 +20,8 @@ import FranceFlag from '../assets/images/france_flag.png';
 import ItalyFlag from '../assets/images/italy_flag.png';
 import JapanFlag from '../assets/images/japan_flag.png';
 import ChinaFlag from '../assets/images/china_flag.png';
+import DutchFlag from '../assets/images/dutch_flag.png';
+
 
 var width = Dimensions.get('window').width;
 
@@ -39,6 +46,21 @@ const shareFacebook = {
   social: Share.Social.FACEBOOK
 };
 
+const options = {
+  title: 'Select Avatar',
+  customButtons: [{ name: 'fb', title: 'Choose Photo from Facebook' }],
+  storageOptions: {
+    skipBackup: true,
+    path: 'images',
+  },
+};
+
+
+function mapDispatchToProps(dispatch) {
+  return {
+    setActiveLanguage: lang => dispatch(setActiveLanguage(lang))
+  };
+}
 
 
 
@@ -63,14 +85,15 @@ class ProfileScreen extends Component {
       language: false,
       share: true,
       activeLang: '',
+      avatarSource: 't',
       laungageArray: [
         {
-          lang: 'uk',
+          lang: 'en-US',
           image: UkFlag,
         },
         {
-          lang: 'ger',
-          image: GermanyFlag,
+          lang: 'nl',
+          image: DutchFlag,
         },
         {
           lang: 'fr',
@@ -106,30 +129,56 @@ class ProfileScreen extends Component {
     this.setState({
       activeLang: lang,
     })
+    this.props.setActiveLanguage(lang);
   }
 
+  onChangeImage = () => {
+    ImagePicker.showImagePicker(options, (response) => {
+      console.log('Response = ', response);
+
+      if (response.didCancel) {
+        console.log('User cancelled image picker');
+      } else if (response.error) {
+        console.log('ImagePicker Error: ', response.error);
+      } else if (response.customButton) {
+        console.log('User tapped custom button: ', response.customButton);
+      } else {
+        const source = { uri: response.uri };
+        console.log('camera succes', source);
+
+        // You can also display the image using data:
+        // const source = { uri: 'data:image/jpeg;base64,' + response.data };
+
+        this.setState({
+          avatarSource: source,
+        });
+      }
+    });
+  }
+
+
   render() {
-    const { language, share, laungageArray, activeLang } = this.state;
-    console.log('active language', activeLang)
-    const languageFlags = ({ flag }) => {
-      const { activeLang } = this.state;
-      if (activeLang == flag) {
-        <Image
-          source={el.image}
-        />
+    const { language, share, laungageArray, activeLang, avatarSource } = this.state;
+    console.log(avatarSource.uri);
+
+    const Avatar = () => {
+      if (avatarSource == 't') {
+        return (<Image source={addImage} />)
       }
       else {
-        <Image
-          source={el.image}
-        />
+        return (
+          <Image source={{ isStatic: true, uri: avatarSource.uri }} />)
       }
     }
+
     return (
       <Grid>
         <Grid>
           <Row style={styles.header} size={35}>
             <View style={styles.profileWrapper}>
-              <Image source={Avatar} />
+              <TouchableHighlight onPress={() => this.onChangeImage()}>
+                <Avatar />
+              </TouchableHighlight>
               <Text style={styles.name}>Emmily Daniels</Text>
               <Text style={styles.language}>ENGLISH</Text>
             </View>
@@ -193,7 +242,7 @@ class ProfileScreen extends Component {
                           key={i}>
                           < Image
                             source={el.image}
-                            style={this.state.activeLang === el.lang && styles.activeFlag}
+                            style={this.props.activeLang === el.lang && styles.activeFlag}
                           />
                         </TouchableOpacity>
                       )
@@ -209,7 +258,17 @@ class ProfileScreen extends Component {
   }
 }
 
-export default ProfileScreen;
+
+function mapStateToProps(state) {
+  return {
+    activeLang: state.activeLang
+  };
+}
+
+
+export default connect(mapStateToProps, mapDispatchToProps)
+  (ProfileScreen);
+
 
 const styles = {
   header: {

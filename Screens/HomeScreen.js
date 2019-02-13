@@ -1,4 +1,4 @@
-import React, { Component } from 'react'
+import React, { Component, Fragment } from 'react'
 
 import {
   View,
@@ -8,6 +8,10 @@ import {
   Image,
   ScrollView,
 } from 'react-native'
+import axios from 'axios';
+import { connect } from 'react-redux';
+import { getAttractions, setActiveLanguage } from "../actions";
+
 
 
 import { Fonts } from '../utils/Fonts';
@@ -27,63 +31,82 @@ class HomeScreen extends Component {
     headerTruncatedBackTitle: 'Nah',
   }
 
+  constructor(props) {
+    super(props);
+
+    this.state = {
+      places: [],
+    }
+  }
+
+  componentDidMount() {
+    const { activeLang } = this.props;
+    this.props.getAttractions(activeLang);
+  }
+
+
+
+  componentWillReceiveProps(nextProps) {
+    const { activeLang } = this.props;
+
+    if (JSON.stringify(this.props.activeLang) == JSON.stringify(nextProps.activeLang)) // Check if it's a new user, you can also use some unique property, like the ID
+    {
+      this.props.getAttractions(activeLang);
+    }
+  }
+
   onPress = (attraction) => {
-    console.log(attraction);
     this.props.navigation.push('Attraction', { attraction });
   }
 
   render() {
-    const attractions = [{
-      title: 'Rederij Volendam Marken Express',
-      par: 'Aenean tellus metus, bibendum sed, posuere ac, mattis non, nunc.',
-      image: 'https://www.anwb.nl/landvananwb/images/Uitjes/thumb_620x349_195345.jpg'
-    },
-    {
-      title: 'Gouwzee',
-      par: 'Aenean tellus metus, bibendum sed, posuere ac, mattis non, nunc.',
-      image: 'https://media-cdn.tripadvisor.com/media/photo-s/0b/c9/06/14/strand-van-volendam-aan.jpg'
-    },
-    {
-      title: 'place Three',
-      par: 'Aenean tellus metus, bibendum sed, posuere ac, mattis non, nunc.',
-      image: 'https://via.placeholder.com/150'
-    },
-    {
-      title: 'place Four',
-      par: 'Aenean tellus metus, bibendum sed, posuere ac, mattis non, nunc.',
-      image: 'https://via.placeholder.com/150'
-    }
-    ]
-
+    const { places } = this.state;
+    const { attractions, activeLang } = this.props;
 
     return (
       <ScrollView
         contentContainerStyle={styles.container}>
-        {attractions.map((item, i) => {
-          return (
-            <TouchableOpacity onPress={() => this.onPress(item)} key={i}>
-              <View style={styles.card}>
-                <Image
-                  style={{
-                    flex: 3,
-                    height: 150,
-                  }}
-                  source={{ uri: item.image }}
-                />
-                <View style={styles.content}>
-                  <Text style={styles.title}>{item.title}</Text>
-                  <Text style={styles.par}>{item.par}</Text>
-                </View>
-              </View>
-            </TouchableOpacity>
-          )
-        })}
+        {attractions ? (
+          <Fragment>
+            {attractions.map((place, i) => {
+              return (
+                <TouchableOpacity onPress={() => this.onPress(place)} key={i}>
+                  <View style={styles.card}>
+                    <Image
+                      style={{
+                        flex: 3,
+                        height: 150,
+                      }}
+                      source={{ uri: `https:${place.field.gallery[0].fields.file.url}` }}
+                    />
+                    <View style={styles.content}>
+                      <Text style={styles.title}>{place.field.title}</Text>
+                      <Text style={styles.par}>{place.field.description}</Text>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              )
+            })}
+          </Fragment>
+        ) : (<Text>Loading</Text>)}
+
       </ScrollView>
     )
   }
 }
 
-export default HomeScreen
+function mapStateToProps(state) {
+  return {
+    attractions: state.attractions,
+    activeLang: state.activeLang
+  };
+}
+
+export default connect(
+  mapStateToProps,
+  { getAttractions, setActiveLanguage }
+)(HomeScreen);
+
 
 const styles = StyleSheet.create({
   container: {
