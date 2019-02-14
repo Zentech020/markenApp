@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { View, Text, Image, TouchableHighlight, Fragment, Dimensions, TouchableOpacity } from 'react-native';
+import { View, Text, Image, TouchableHighlight, Fragment, Dimensions, TouchableOpacity, AsyncStorage } from 'react-native';
 import { Col, Row, Grid } from "react-native-easy-grid";
 import { connect } from "react-redux";
 import { setActiveLanguage } from '../actions';
@@ -85,7 +85,8 @@ class ProfileScreen extends Component {
       language: false,
       share: true,
       activeLang: '',
-      avatarSource: 't',
+      avatarSource: null,
+      avatarImageImplemented: false,
       laungageArray: [
         {
           lang: 'en-US',
@@ -134,7 +135,7 @@ class ProfileScreen extends Component {
 
   onChangeImage = () => {
     ImagePicker.showImagePicker(options, (response) => {
-      console.log('Response = ', response);
+      // console.log('Response = ', response);
 
       if (response.didCancel) {
         console.log('User cancelled image picker');
@@ -144,13 +145,20 @@ class ProfileScreen extends Component {
         console.log('User tapped custom button: ', response.customButton);
       } else {
         const source = { uri: response.uri };
-        console.log('camera succes', source);
 
         // You can also display the image using data:
         // const source = { uri: 'data:image/jpeg;base64,' + response.data };
-
+        // const saveUserId = async () => {
+        //   try {
+        //     await AsyncStorage.setItem('profileImage', userId);
+        //   } catch (error) {
+        //     // Error retrieving data
+        //     console.log(error.message);
+        //   }
+        // };
         this.setState({
           avatarSource: source,
+          avatarImageImplemented: true,
         });
       }
     });
@@ -158,17 +166,9 @@ class ProfileScreen extends Component {
 
 
   render() {
-    const { language, share, laungageArray, activeLang, avatarSource } = this.state;
-    console.log(avatarSource.uri);
-
-    const Avatar = () => {
-      if (avatarSource == 't') {
-        return (<Image source={addImage} />)
-      }
-      else {
-        return (
-          <Image source={{ isStatic: true, uri: avatarSource.uri }} />)
-      }
+    const { language, share, laungageArray, activeLang, avatarSource, avatarImageImplemented } = this.state;
+    if (avatarSource !== null) {
+      console.log(avatarSource.uri);
     }
 
     return (
@@ -177,7 +177,11 @@ class ProfileScreen extends Component {
           <Row style={styles.header} size={35}>
             <View style={styles.profileWrapper}>
               <TouchableHighlight onPress={() => this.onChangeImage()}>
-                <Avatar />
+                {this.state.avatarSource === null ? (
+                  <Text>Select a Photo</Text>
+                ) : (
+                    <Image source={this.state.avatarSource} style={styles.avatarImage} />
+                  )}
               </TouchableHighlight>
               <Text style={styles.name}>Emmily Daniels</Text>
               <Text style={styles.language}>ENGLISH</Text>
@@ -352,5 +356,9 @@ const styles = {
     borderColor: '#158ACC',
     borderWidth: 4,
     borderRadius: 20,
+  },
+  avatarImage: {
+    width: 100,
+    height: 100,
   }
 }
