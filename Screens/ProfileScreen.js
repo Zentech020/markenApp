@@ -1,13 +1,16 @@
-import React, { Component } from 'react';
-import { View, Text, Image, TouchableHighlight, Fragment, Dimensions, TouchableOpacity, AsyncStorage } from 'react-native';
+import React, { Component, Fragment } from 'react';
+import { View, Text, Button, Image, TouchableHighlight, Dimensions, TouchableOpacity, AsyncStorage, TextInput } from 'react-native';
 import { Col, Row, Grid } from "react-native-easy-grid";
 import { connect } from "react-redux";
 import { setActiveLanguage } from '../actions';
 import Share from 'react-native-share';
+import Icon from 'react-native-vector-icons/MaterialIcons';
 const ImagePicker = require("react-native-image-picker");
 
+import { getLanguages } from '../actions';
 
 import { Fonts } from '../utils/Fonts';
+
 
 import Avatar from '../assets/images/avatar.png';
 import addImage from '../assets/images/addImage.png';
@@ -56,12 +59,6 @@ const options = {
 };
 
 
-function mapDispatchToProps(dispatch) {
-  return {
-    setActiveLanguage: lang => dispatch(setActiveLanguage(lang))
-  };
-}
-
 
 
 class ProfileScreen extends Component {
@@ -87,6 +84,8 @@ class ProfileScreen extends Component {
       activeLang: '',
       avatarSource: null,
       avatarImageImplemented: false,
+      name: null,
+      openTextinput: true,
       laungageArray: [
         {
           lang: 'en-US',
@@ -116,6 +115,13 @@ class ProfileScreen extends Component {
     }
   }
 
+
+  componentDidMount() {
+    AsyncStorage.getItem('avatar').then((value) => this.setState({ avatarSource: value }))
+    AsyncStorage.getItem('name').then((value) => this.setState({ name: value, openTextinput: false, }))
+    this.props.getLanguages();
+  }
+
   shareTwitter = () => {
     Share.shareSingle(shareTwitter);
   }
@@ -127,6 +133,7 @@ class ProfileScreen extends Component {
   }
 
   selectLanguage = (lang) => {
+    console.log(lang);
     this.setState({
       activeLang: lang,
     })
@@ -144,18 +151,9 @@ class ProfileScreen extends Component {
       } else if (response.customButton) {
         console.log('User tapped custom button: ', response.customButton);
       } else {
-        const source = { uri: response.uri };
+        const source = response.uri;
 
-        // You can also display the image using data:
-        // const source = { uri: 'data:image/jpeg;base64,' + response.data };
-        // const saveUserId = async () => {
-        //   try {
-        //     await AsyncStorage.setItem('profileImage', userId);
-        //   } catch (error) {
-        //     // Error retrieving data
-        //     console.log(error.message);
-        //   }
-        // };
+        AsyncStorage.setItem('avatar', source);
         this.setState({
           avatarSource: source,
           avatarImageImplemented: true,
@@ -164,11 +162,48 @@ class ProfileScreen extends Component {
     });
   }
 
+  saveName = () => {
+    const { name } = this.state;
+
+    AsyncStorage.setItem('name', name);
+    this.setState({
+      openTextinput: false,
+    })
+  }
+
 
   render() {
-    const { language, share, laungageArray, activeLang, avatarSource, avatarImageImplemented } = this.state;
-    if (avatarSource !== null) {
-      console.log(avatarSource.uri);
+    const { language, share, laungageArray, activeLang, avatarSource, avatarImageImplemented, showTextInput, name } = this.state;
+    const { languages } = this.props;
+    console.log(this.props.activeLang);
+
+
+    const Name = () => {
+      const { name, openTextinput } = this.state;
+      if (!openTextinput) {
+        return (
+          <Fragment>
+            <Text style={styles.name}>{name}</Text>
+            <TouchableOpacity onPress={() => this.setState({ openTextinput: true })} >
+              <Icon name='build' />
+            </TouchableOpacity>
+          </Fragment>
+        );
+      }
+      else {
+        return (
+          <TextInput
+            style={styles.name}
+            onChangeText={(name) => this.setState({ name })}
+            value={this.state.name}
+            returnKeyType='search'
+            autoFocus={true}
+            onSubmitEditing={() => this.saveName()}
+            clearButtonMode="while-editing"
+            placeholder="Enter your name"
+          />
+        )
+      }
     }
 
     return (
@@ -176,14 +211,14 @@ class ProfileScreen extends Component {
         <Grid>
           <Row style={styles.header} size={35}>
             <View style={styles.profileWrapper}>
-              <TouchableHighlight onPress={() => this.onChangeImage()}>
+              <TouchableOpacity onPress={() => this.onChangeImage()}>
                 {this.state.avatarSource === null ? (
-                  <Text>Select a Photo</Text>
+                  <Image source={addImage} style={styles.avatarImage} />
                 ) : (
-                    <Image source={this.state.avatarSource} style={styles.avatarImage} />
+                    <Image source={{ uri: this.state.avatarSource }} style={styles.avatarImage} />
                   )}
-              </TouchableHighlight>
-              <Text style={styles.name}>Emmily Daniels</Text>
+              </TouchableOpacity>
+              <Name />
               <Text style={styles.language}>ENGLISH</Text>
             </View>
           </Row>
@@ -238,15 +273,16 @@ class ProfileScreen extends Component {
                     <Text style={styles.shareDescription}>Sed aliquam ultrices mauris. Vivamus laoreet. Sed magna purus, fermentum eu, tincidunt eu, varius ut, felis.</Text>
                   </Row>
                   <Row size={70} style={styles.languageContainer}>
-                    {laungageArray.map((el, i) => {
+                    {languages.map((el, i) => {
+                      console.log(el.field.countryCode);
                       return (
                         <TouchableOpacity
-                          onPress={() => this.selectLanguage(el.lang)}
+                          onPress={() => this.selectLanguage(el.field.countryCode)}
                           style={styles.languageFlag}
                           key={i}>
                           < Image
-                            source={el.image}
-                            style={this.props.activeLang === el.lang && styles.activeFlag}
+                            source={{ uri: `https:${el.field.flagImage.fields.file.url}` }}
+                            style={[this.props.activeLang === el.field.countryCode && styles.activeFlag || styles.flagImage]}
                           />
                         </TouchableOpacity>
                       )
@@ -257,7 +293,7 @@ class ProfileScreen extends Component {
             </View>
           </Row>
         </Grid>
-      </Grid>
+      </Grid >
     )
   }
 }
@@ -265,12 +301,13 @@ class ProfileScreen extends Component {
 
 function mapStateToProps(state) {
   return {
-    activeLang: state.activeLang
+    activeLang: state.activeLang,
+    languages: state.languages
   };
 }
 
 
-export default connect(mapStateToProps, mapDispatchToProps)
+export default connect(mapStateToProps, { setActiveLanguage, getLanguages })
   (ProfileScreen);
 
 
@@ -303,6 +340,11 @@ const styles = {
     fontSize: 24,
     fontFamily: Fonts.MontSerratRegular,
     marginTop: 20,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: width,
+    textAlign: 'center',
   },
   language: {
     fontSize: 12,
@@ -349,6 +391,7 @@ const styles = {
   },
   languageFlag: {
     width: width * 0.25,
+    height: 40,
     alignItems: 'center',
     paddingTop: 40,
   },
@@ -356,9 +399,16 @@ const styles = {
     borderColor: '#158ACC',
     borderWidth: 4,
     borderRadius: 20,
+    width: 40,
+    height: 40,
   },
   avatarImage: {
     width: 100,
     height: 100,
+    borderRadius: 50,
+  },
+  flagImage: {
+    width: 40,
+    height: 40,
   }
 }

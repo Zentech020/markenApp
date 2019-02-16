@@ -23,6 +23,20 @@ export const getAttraction = (id) => async dispatch => {
   }
 }
 
+export const getLanguages = () => async dispatch => {
+  try {
+    dispatch({ type: 'LANGUAGES_IS_LOADING' });
+    const result = await axios.get(`http://192.168.178.16:5000/languages`, {});
+    return dispatch({ type: 'DATA_LANGUAGES', result });
+  }
+  catch (err) {
+    return dispatch({
+      type: 'DATA_LANGUAGES_ERROR',
+      err
+    });
+  }
+}
+
 export function setActiveLanguage(lang) {
   console.log('from actions --- ', lang)
   return { type: "ACTIVE_LANG", lang };

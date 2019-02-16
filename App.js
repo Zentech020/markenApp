@@ -9,7 +9,7 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 
 import rootReducer from './reducer';
 
-const store = createStore(rootReducer, applyMiddleware( thunk))
+const store = createStore(rootReducer, applyMiddleware(thunk))
 
 
 import HomeScreen from './Screens/HomeScreen';
@@ -67,7 +67,7 @@ class App extends Component {
   render() {
     return (
       <Provider store={store}>
-       <Navigation />
+        <Navigation />
       </Provider>
     )
   }

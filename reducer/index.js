@@ -2,7 +2,8 @@ const initialState = {
   attractions: [],
   attraction: null,
   isLoading: null,
-  activeLang: 'en-US',
+  languages: [],
+  activeLang: 'nl',
 };
 
 function rootReducer(state = initialState, action) {
@@ -30,6 +31,19 @@ function rootReducer(state = initialState, action) {
     }
 
     case 'SINGLE_ATTRACTION_ERROR': {
+      return { ...state };
+    }
+
+    case 'LANGUAGES_IS_LOADING': {
+      return { ...state, isLoading: true };
+    }
+
+    case 'DATA_LANGUAGES': {
+      const { data } = action.result;
+      return { ...state, languages: data, isLoading: false };
+    }
+
+    case 'DATA_LANGUAGES_ERROR': {
       return { ...state };
     }
 

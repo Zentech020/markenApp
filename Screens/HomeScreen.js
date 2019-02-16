@@ -11,6 +11,7 @@ import {
 import axios from 'axios';
 import { connect } from 'react-redux';
 import { getAttractions, setActiveLanguage } from "../actions";
+import { AttractionCard } from '../components';
 
 
 
@@ -70,21 +71,12 @@ class HomeScreen extends Component {
           <Fragment>
             {attractions.map((place, i) => {
               return (
-                <TouchableOpacity onPress={() => this.onPress(place)} key={i}>
-                  <View style={styles.card}>
-                    <Image
-                      style={{
-                        flex: 3,
-                        height: 150,
-                      }}
-                      source={{ uri: `https:${place.field.gallery[0].fields.file.url}` }}
-                    />
-                    <View style={styles.content}>
-                      <Text style={styles.title}>{place.field.title}</Text>
-                      <Text style={styles.par}>{place.field.description}</Text>
-                    </View>
-                  </View>
-                </TouchableOpacity>
+                <AttractionCard
+                  title={place.field.title}
+                  description={place.field.description}
+                  image={place.field.gallery[0].fields.file.url}
+                  onPress={() => this.onPress(place)}
+                  key={i} />
               )
             })}
           </Fragment>

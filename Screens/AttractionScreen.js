@@ -1,7 +1,6 @@
 import React, { Component, Fragment } from 'react';
-import { View, Text, Image, StyleSheet, ScrollView, Button, TouchableHighlight } from 'react-native';
+import { View, Text, Image, StyleSheet, ScrollView, Button, TouchableHighlight, TouchableOpacity } from 'react-native';
 import Gallery from 'react-native-image-gallery';
-import Mapbox from '@mapbox/react-native-mapbox-gl';
 import Video from 'react-native-video';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { Col, Row, Grid } from "react-native-easy-grid";
@@ -9,12 +8,11 @@ import { Slider } from 'react-native-elements';
 
 import { connect } from 'react-redux';
 import { getAttraction } from "../actions";
-
+import { AttractionMap, AttractionGallery, AttractionAudio, AttractionAudioController } from '../components';
 
 
 import { Fonts } from '../utils/Fonts';
 
-Mapbox.setAccessToken('pk.eyJ1IjoiemVubm9icnVpbnNtYSIsImEiOiJjanFxcms5ajYwNXFxNDhsajlob3Qxd2cxIn0.5WXfFyF1RWuwdC9cpSx0Kg');
 
 
 class AttractionScreen extends Component {
@@ -49,22 +47,17 @@ class AttractionScreen extends Component {
     this.props.getAttraction(id);
   }
 
-
-
-  renderAnnotations() {
-    return (
-      <Mapbox.PointAnnotation
-        key='pointAnnotation'
-        id='pointAnnotation'
-        coordinate={[5.0761, 52.4498]}>
-
-        <View style={styles.annotationContainer}>
-          <View style={styles.annotationFill} />
-        </View>
-        <Mapbox.Callout title='Look! An annotation!' />
-      </Mapbox.PointAnnotation>
-    )
+  onPlay = (paused) => {
+    console.log('playing music');
+    this.setState({ paused: !paused })
   }
+
+  onPause = (paused) => {
+    console.log('pausing music');
+    this.setState({ paused: !paused })
+  }
+
+
 
 
 
@@ -72,25 +65,21 @@ class AttractionScreen extends Component {
     const { galleryOpen, paused, duration, currentTime, value } = this.state;
     const { attraction, isLoading } = this.props;
 
-    console.log('LOADING --- ', isLoading);
 
-    if (attraction) {
-      console.log(this.props.attraction.fields);
-    }
+
     const { title, description, gallery, audio } = this.props.navigation.state.params.attraction.field;
 
-
     const PlayButton = () => (
-      <TouchableHighlight onPress={() => this.setState({ paused: !paused })}>
-        <Icon name="play_arrow" size={50} />
-      </TouchableHighlight>
+      <TouchableOpacity onPressIn={() => this.onPlay(paused)}>
+        <Icon name="play-arrow" size={50} />
+      </TouchableOpacity>
     )
 
 
     const PauseButton = () => (
-      <TouchableHighlight onPress={() => this.setState({ paused: !paused })}>
+      <TouchableOpacity onPressIn={() => this.onPause(paused)}>
         <Icon name="pause" size={50} />
-      </TouchableHighlight>
+      </TouchableOpacity>
     )
 
 
@@ -113,47 +102,21 @@ class AttractionScreen extends Component {
           </View>
         ) : (
             <Fragment>
-              <Mapbox.MapView
-                styleURL={'mapbox://styles/zennobruinsma/cjqqrnaau8eey2snpdmjgxhx9'}
-                zoomLevel={15}
-                centerCoordinate={[this.props.navigation.state.params.attraction.field.location.lon, this.props.navigation.state.params.attraction.field.location.lat]}
-                style={styles.mapContainer}
-                zoomLevel={13}
-                showUserLocation={true}>
-                {this.renderAnnotations()}
-              </Mapbox.MapView>
+              <AttractionMap
+                lat={this.props.navigation.state.params.attraction.field.location.lat}
+                lon={this.props.navigation.state.params.attraction.field.location.lon}
+              />
               <View style={styles.container}>
 
                 {attraction ? (
                   <Text style={styles.title}>{this.props.attraction.fields.title}</Text>
                 ) : (null)}
-
-                <View style={styles.galleryWrapper}>
-                  {gallery.slice(0, 1).map((image, i) => {
-                    return (
-                      <Image
-                        key={i}
-                        style={styles.bigImage}
-                        source={{ uri: `https:${image.fields.file.url}` }}
-                        onPress={() => this.setState({ galleryOpen: true })}
-                      />
-                    )
-                  })}
-
-                  <View style={styles.smallImagesWrapper}>
-                    {gallery.slice(1).map((image, i) => {
-                      return (
-                        <Image
-                          key={i}
-                          style={styles.smallImage}
-                          source={{ uri: `https:${image.fields.file.url}` }}
-                        />
-                      )
-                    })}
-
-                    <Button title="open Gallery" onPress={() => this.setState({ galleryOpen: true })}></Button>
-                  </View>
-                </View>
+                <Fragment>
+                  <AttractionGallery
+                    gallery={gallery}
+                    onPress={() => this.setState({ galleryOpen: true })}
+                  />
+                </Fragment>
                 <View style={styles.AudioWrapper}>
                   <Text style={styles.audioTitle}>Listen</Text>
                   <View style={styles.PlayWrapper}>
@@ -172,11 +135,24 @@ class AttractionScreen extends Component {
                           value={currentTime}
                           onValueChange={value => this.player.seek(value)}
                           maximumValue={duration}
-                        />) : <Text>0</Text>}
+                        />) : (<Slider
+                          thumbTintColor='#158ACC'
+                          value={currentTime}
+                          onValueChange={value => this.player.seek(value)}
+                          maximumValue={duration}
+                        />)}
                       </Col>
                     </Grid>
                   </View>
                 </View>
+                {/* <AttractionAudioController
+                  paused={paused}
+                  onValueChange={value => this.player.seek(value)}
+                  duration={duration}
+                  currentTime={currentTime}
+                  onPlay={() => this.setState({ paused: !paused })}
+                  onPause={() => console.log('click pause')}
+                /> */}
                 <Video source={{ uri: `https:${audio.fields.file.url}` }}
                   audioOnly={true}
                   ref={(ref) => {
@@ -199,6 +175,18 @@ class AttractionScreen extends Component {
                   }}           // Callback when remote video is buffering
                   onError={this.videoError}               // Callback when video cannot be loaded
                   style={styles.backgroundVideo} />
+                {/* <AttractionAudio
+                  audio={audio}
+                  paused={paused}
+                  onLoad={(audio) => {
+                    this.setState({
+                      paused: true,
+                      duration: audio.duration,
+                    });
+                  }}
+                  onError={this.videoError}
+                  onBuffer={this.onBuffer}
+                /> */}
                 <View>
                   <Text style={styles.description} >{description}</Text>
                 </View>
@@ -238,12 +226,6 @@ const styles = {
     marginLeft: 10,
     marginRight: 10,
     marginBottom: 30,
-  },
-
-  mapContainer: {
-    flex: 1,
-    backgroundColor: 'black',
-    height: 300,
   },
 
   title: {
